@@ -41,8 +41,9 @@ public class LoginTask implements Task {
                 Enter.keyValues(USUARIO).into(TXT_USUARIO),
                 Enter.keyValues(CLAVE).into(TXT_ClAVE),
                 Click.on(BTN_INICIAR),
+                WaitUntil.the(LBL_NOMBRE, isVisible()).forNoMoreThan(15).seconds(),
+                Click.on(BTN_BUSCAR),
                 WaitUntil.the(TXT_BUSCAR, isVisible()).forNoMoreThan(15).seconds(),
-                Click.on(TXT_BUSCAR),
                 Enter.keyValues(datos.getBusqueda()).into(TXT_BUSCAR).thenHit(Keys.ENTER),
                 WaitUntil.the(LBL_NOMBRE_PRODUCTO, isVisible()).forNoMoreThan(15).seconds(),
                 Interactions.on()
