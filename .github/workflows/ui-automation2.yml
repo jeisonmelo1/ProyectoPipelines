@@ -1,0 +1,71 @@
+name: UI Automation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-automation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Serenity scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Grant Gradle wrapper permission
+        run: chmod +x gradlew
+
+      - name: Verify test credentials
+        env:
+          ADVANTAGE_USERNAME: ${{ secrets.ADVANTAGE_USERNAME }}
+          ADVANTAGE_PASSWORD: ${{ secrets.ADVANTAGE_PASSWORD }}
+        run: |
+          if [[ -z "$ADVANTAGE_USERNAME" || -z "$ADVANTAGE_PASSWORD" ]]; then
+            echo "::error::Configure ADVANTAGE_USERNAME and ADVANTAGE_PASSWORD as repository secrets."
+            exit 1
+          fi
+
+      - name: Run scenarios
+        env:
+          ADVANTAGE_USERNAME: ${{ secrets.ADVANTAGE_USERNAME }}
+          ADVANTAGE_PASSWORD: ${{ secrets.ADVANTAGE_PASSWORD }}
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" ./gradlew test --rerun-tasks --no-daemon
+
+      - name: Upload Serenity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: serenity-report
+          path: target/site/serenity
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: build/test-results/test
+          if-no-files-found: warn
+          retention-days: 14
